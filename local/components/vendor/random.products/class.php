@@ -55,14 +55,14 @@ class RandomProductsComponent extends CBitrixComponent
                 throw new LoaderException(Loc::getMessage("RANDOM_PRODUCTS_IBLOCK_MODULE_NOT_INSTALLED"));
             }
 
-            $cacheId = md5(serialize($this->arParams));
-            $cacheDir = '/random_products/' . $this->arParams['IBLOCK_ID'];
+            $sCacheId = md5(serialize($this->arParams));
+            $sCacheDir = '/random_products/' . $this->arParams['IBLOCK_ID'];
 
-            $cache = \Bitrix\Main\Data\Cache::createInstance();
+            $oCache = \Bitrix\Main\Data\Cache::createInstance();
 
-            if ($cache->initCache($this->arParams['CACHE_TIME'], $cacheId, $cacheDir)) {
-                $this->arResult = $cache->getVars();
-            } elseif ($cache->startDataCache()) {
+            if ($oCache->initCache($this->arParams['CACHE_TIME'], $sCacheId, $sCacheDir)) {
+                $this->arResult = $oCache->getVars();
+            } elseif ($oCache->startDataCache()) {
                 $arOrder = ["RAND" => "ASC"];
                 $arFilter = [
                     "IBLOCK_ID" => $this->arParams['IBLOCK_ID'],
@@ -71,21 +71,21 @@ class RandomProductsComponent extends CBitrixComponent
                     "SECTION_ID" => $this->arParams['SECTION_IDS'],
                     "INCLUDE_SUBSECTIONS" => "Y"
                 ];
-                $arSelect = ["ID", "NAME", "PREVIEW_PICTURE", "DETAIL_PAGE_URL"];
+                $arSelectFields = ["ID", "NAME", "PREVIEW_PICTURE", "DETAIL_PAGE_URL"];
 
-                $res = \CIBlockElement::GetList($arOrder, $arFilter, false, ["nPageSize" => 10], $arSelect);
+                $dbResult = \CIBlockElement::GetList($arOrder, $arFilter, false, ["nPageSize" => 10], $arSelectFields);
 
                 $this->arResult['ITEMS'] = [];
-                while ($ob = $res->GetNextElement()) {
-                    $arFields = $ob->GetFields();
+                while ($oElement = $dbResult->GetNextElement()) {
+                    $arFields = $oElement->GetFields();
                     $this->arResult['ITEMS'][] = $arFields;
                 }
 
-                if (empty ($this->arResult['ITEMS'])) {
+                if (empty($this->arResult['ITEMS'])) {
                     $this->arResult['ERROR'] = Loc::getMessage("RANDOM_PRODUCTS_NO_PRODUCTS");
                 }
 
-                $cache->endDataCache($this->arResult);
+                $oCache->endDataCache($this->arResult);
             }
 
             $this->includeComponentTemplate();
@@ -99,7 +99,7 @@ class RandomProductsComponent extends CBitrixComponent
                 "DESCRIPTION" => "RandomProductsComponent: " . $e->getMessage(),
             ]);
 
-            $cache->abortDataCache();
+            $oCache->abortDataCache();
 
             $this->includeComponentTemplate();
         }
