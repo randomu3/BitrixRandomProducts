@@ -1,13 +1,19 @@
-<?php if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED!==true) die();
+<?php
+namespace Vendor\Components;
 
 use Bitrix\Main\Loader;
-use Bitrix\Iblock\IblockTable;
+use Bitrix\Main\LoaderException;
 use Bitrix\Main\Localization\Loc;
+use Bitrix\Main\Diag\Debug;
+use CEventLog;
+use CBitrixComponent;
+
+if (!defined("B_PROLOG_INCLUDED") || B_PROLOG_INCLUDED !== true) die();
 
 Loc::loadMessages(__FILE__);
 
 /**
- * Компонент для вывода списка 10 случайных товаров.
+ * Компонент для вывода списка случайных товаров.
  */
 class RandomProductsComponent extends CBitrixComponent
 {
@@ -33,34 +39,46 @@ class RandomProductsComponent extends CBitrixComponent
      */
     public function executeComponent()
     {
-        if (!Loader::includeModule('iblock')) {
-            $this->arResult['ERROR'] = Loc::getMessage("RANDOM_PRODUCTS_IBLOCK_MODULE_NOT_INSTALLED");
+        try {
+            if (!Loader::includeModule('iblock')) {
+                throw new LoaderException(Loc::getMessage("RANDOM_PRODUCTS_IBLOCK_MODULE_NOT_INSTALLED"));
+            }
+
+            $arOrder = ["RAND" => "ASC"];
+            $arFilter = [
+                "IBLOCK_ID" => $this->arParams['IBLOCK_ID'],
+                "ACTIVE_DATE" => "Y",
+                "ACTIVE" => "Y",
+                "SECTION_ID" => $this->arParams['SECTION_IDS'],
+                "INCLUDE_SUBSECTIONS" => "Y"
+            ];
+            $arSelect = ["ID", "NAME", "PREVIEW_PICTURE", "DETAIL_PAGE_URL"];
+
+            $res = \CIBlockElement::GetList($arOrder, $arFilter, false, ["nPageSize" => 10], $arSelect);
+
+            $this->arResult['ITEMS'] = [];
+            while ($ob = $res->GetNextElement()) {
+                $arFields = $ob->GetFields();
+                $this->arResult['ITEMS'][] = $arFields;
+            }
+
+            if (empty($this->arResult['ITEMS'])) {
+                $this->arResult['ERROR'] = Loc::getMessage("RANDOM_PRODUCTS_NO_PRODUCTS");
+            }
+
             $this->includeComponentTemplate();
-            return;
+        } catch (LoaderException $e) {
+            $this->arResult['ERROR'] = $e->getMessage();
+
+            // Добавление записи в журнал событий
+            CEventLog::Add([
+                "SEVERITY" => "ERROR",
+                "AUDIT_TYPE_ID" => "RANDOM_PRODUCTS_EXCEPTION",
+                "MODULE_ID" => "iblock",
+                "DESCRIPTION" => "RandomProductsComponent: " . $e->getMessage(),
+            ]);
+
+            $this->includeComponentTemplate();
         }
-
-        $arOrder = Array("RAND" => "ASC");
-        $arFilter = Array(
-            "IBLOCK_ID" => $this->arParams['IBLOCK_ID'],
-            "ACTIVE_DATE" => "Y",
-            "ACTIVE" => "Y",
-            "SECTION_ID" => $this->arParams['SECTION_IDS'],
-            "INCLUDE_SUBSECTIONS" => "Y"
-        );
-        $arSelect = Array("ID", "NAME", "PREVIEW_PICTURE", "DETAIL_PAGE_URL");
-
-        $res = CIBlockElement::GetList($arOrder, $arFilter, false, Array("nPageSize" => 10), $arSelect);
-
-        $this->arResult['ITEMS'] = array();
-        while ($ob = $res->GetNextElement()) {
-            $arFields = $ob->GetFields();
-            $this->arResult['ITEMS'][] = $arFields;
-        }
-
-        if (empty($this->arResult['ITEMS'])) {
-            $this->arResult['ERROR'] = Loc::getMessage("RANDOM_PRODUCTS_NO_PRODUCTS");
-        }
-
-        $this->includeComponentTemplate();
     }
 }
