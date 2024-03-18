@@ -8,6 +8,7 @@ $APPLICATION->IncludeComponent(
     array(
         "IBLOCK_ID" => "2",
         "SECTION_IDS" => "1,2,3,4",
+        "CACHE_TIME" => 3600,
     ),
     false
 );

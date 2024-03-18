@@ -15,5 +15,11 @@ $arComponentParameters = array(
             "TYPE" => "STRING",
             "DEFAULT" => '',
         ),
+        "CACHE_TIME" => array(
+            "PARENT" => "CACHE_SETTINGS",
+            "NAME" => GetMessage("CACHE_TIME"),
+            "TYPE" => "STRING",
+            "DEFAULT" => 3600
+        ),
     ),
 );
