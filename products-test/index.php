@@ -6,11 +6,10 @@ $APPLICATION->IncludeComponent(
     "vendor:random.products",
     ".default",
     array(
-        "IBLOCK_ID" => "x", // замените x на ID инфоблока с товарами
-        // здесь могут быть другие параметры, если они были добавлены в компонент
+        "IBLOCK_ID" => "2",
+        "SECTION_IDS" => "1,2,3,4",
     ),
     false
 );
 
 require($_SERVER["DOCUMENT_ROOT"]."/bitrix/footer.php");
-?>
